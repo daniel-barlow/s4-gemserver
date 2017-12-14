@@ -1,0 +1,12 @@
+require 'aws-sdk-s3'
+
+
+s3 = Aws::S3::Resource.new(region: 'eu-west-1')
+gems = ARGV[0..-2]
+bucket = s3.bucket(ARGV[-1])
+
+require 'pry'; binding.pry
+
+
+
+
