@@ -1,38 +1,48 @@
-# S4::Gemserver
+# The Simple S3 Gemserver
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/s4/gemserver`. To experiment with that code, run `bin/console` for an interactive prompt.
+This gem provides the command `s4g-upload`, which uploads a folder
+full of gems into an S3 bucket and creates/updates the appropriate
+metadata to allow Bundler to use the bucket as a gem source.
 
-TODO: Delete this and the text above, and describe your gem
+The motivation is that you can build your private gems on a CI server
+and then upload them into a private S3 bucket.
 
 ## Installation
-
-Add this line to your application's Gemfile:
-
-```ruby
-gem 's4-gemserver'
-```
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
 
     $ gem install s4-gemserver
 
 ## Usage
 
-TODO: Write usage instructions here
+`s4g-upload` expects the environment variables AWS_ACCESS_KEY_ID and
+AWS_SECRET_ACCESS_KEY to be set correctly, and the bucket to exist.
+Run it with
+
+    $ s4g-upload --create name-of-my-bucket path/to/my/gem-repo # first time
+    $ s4g-upload name-of-my-bucket path/to/my/gem-repo # subsequent times
+
+`path/to/my/gem-repo` should name a directory containing a
+subdirectory called `gems`, which holds all the gems you wish to
+upload.  `s4g-upload` will
+
+* download, update and re-upload the "specs" files that bundler
+expects to find
+* upload the new gems.
+
+If it cannot find the specs and you have not specified `--create` it will
+assume that something has gone wrong, and stop.
+
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+After checking out the repo, run `bundle install` to install dependencies.
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/s4-gemserver. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and enhancement requests are welcome on GitHub at https://github.com/simplybusiness/s4-gemserver.
+
+Please open an issue describing the bug or requested feature before spending time working on a patch - it might be that we already are working on it or have a different approach in mind for whatever you want to do
+
+This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
 ## License
 
@@ -40,4 +50,4 @@ The gem is available as open source under the terms of the [MIT License](http://
 
 ## Code of Conduct
 
-Everyone interacting in the S4::Gemserver project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/s4-gemserver/blob/master/CODE_OF_CONDUCT.md).
+Everyone interacting in the S4::Gemserver project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/simplybusiness/s4-gemserver/blob/master/CODE_OF_CONDUCT.md).
