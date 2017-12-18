@@ -1,12 +1,69 @@
 require 'aws-sdk-s3'
+require 'rubygems'
+require 'rubygems/indexer'
 
+marshal_version = [Marshal::MAJOR_VERSION, Marshal::MINOR_VERSION].join '.'
 
 s3 = Aws::S3::Resource.new(region: 'eu-west-1')
-gems = ARGV[0..-2]
-bucket = s3.bucket(ARGV[-1])
 
-require 'pry'; binding.pry
+create, argv_paths = ARGV.partition {|q| q=='--create'}
+bucket = s3.bucket(argv_paths[0])
+localrepo = argv_paths.fetch(1, '.')
+
+unless File.exists?(localrepo)
+  warn "Local repository #{localrepo} does not exist"
+  exit(1)
+end
+
+gems = Dir.glob("#{localrepo}/gems/*.gem")
+
+if gems.empty?
+  warn "No files matching *.gem in #{localrepo}/gems"
+  exit(1)
+end
+
+indices=%w(latest_specs prerelease_specs specs).flat_map {|n|
+  ["#{n}.#{marshal_version}",
+   "#{n}.#{marshal_version}.gz"]
+}
+
+missing_indices = []
+indices.each do |i|
+  o = bucket.object(i)
+  if o.exists?
+    f = "#{localrepo}/#{i}"
+    warn "Downloading #{f}"
+    o.download_file(f)
+  else
+    missing_indices << i
+  end
+end
+
+update = true
+unless missing_indices.empty?
+  warn "Missing index files #{missing_indices.join ',' }\nNo gem repository here?"
+  if create.empty?
+    warn "Use --create flag to create index files"
+    update = false
+    exit(1)
+  end
+end
 
 
+gems.each do |gem|
+  warn "Uploading #{gem}"
+  bucket.put_object(body: File.read(gem), key: "gems/"+File.basename(gem))
+end
 
+indexer = Gem::Indexer.new localrepo, build_modern: true, update: update
+if update
+  indexer.update_index
+else
+  indexer.generate_index
+end
 
+indices.each do |i|
+  f = "#{localrepo}/#{i}"
+  warn "Uploading #{f}"
+  bucket.put_object(body: File.read(f), key: File.basename(i))
+end
